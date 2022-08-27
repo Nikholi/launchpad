@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-server
+  namespace: redis-server
+spec:
+  selector:
+    matchLabels:
+      app: redis-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis-server
+        name: redis-server
+    spec:
+      nodeSelector:
+        node-type: worker
+      containers:
+      - name: redis-server
+        image: redis:alpine
+        args: ["--appendonly", "yes", "--requirepass", "$(REDIS_PASS)"]
+        ports:
+          - name: redis-server
+            containerPort: 6379
+        volumeMounts:
+          - name: lv-storage
+            mountPath: /data
+        env:
+            - name: REDIS_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+      volumes:
+        - name: lv-storage
+          persistentVolumeClaim:
+            claimName: redis-pvc
